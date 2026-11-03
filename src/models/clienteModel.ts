@@ -1,19 +1,36 @@
+
 import { db } from "../config/database";
 import { Cliente } from "../types/cliente";
 
 export class ClienteModel {
+  // Lista somente clientes ativos.
   static async findAll(): Promise<Cliente[]> {
-    const [rows] = await db.query(
-      "SELECT * FROM clientes ORDER BY id_cliente"
+    const [rows] = await db.execute(
+      `SELECT * FROM clientes
+       WHERE ativo = 1
+       ORDER BY id_cliente`
     );
 
     return rows as Cliente[];
   }
 
+  // Busca pelo ID, inclusive se o cliente estiver inativo.
   static async findById(id: number): Promise<Cliente | null> {
-    const [rows] = await db.query(
+    const [rows] = await db.execute(
       "SELECT * FROM clientes WHERE id_cliente = ?",
       [id]
+    );
+
+    const clientes = rows as Cliente[];
+
+    return clientes.length > 0 ? clientes[0] : null;
+  }
+
+  // Busca pelo CPF, inclusive se o cliente estiver inativo.
+  static async findByCpf(cpf: string): Promise<Cliente | null> {
+    const [rows] = await db.execute(
+      "SELECT * FROM clientes WHERE cpf = ?",
+      [cpf]
     );
 
     const clientes = rows as Cliente[];
@@ -28,9 +45,9 @@ export class ClienteModel {
     email: string | null
   ): Promise<number> {
     const [result] = await db.execute(
-      `INSERT INTO clientes 
-       (nome, cpf, telefone, email)
-       VALUES (?, ?, ?, ?)`,
+      `INSERT INTO clientes
+       (nome, cpf, telefone, email, ativo)
+       VALUES (?, ?, ?, ?, 1)`,
       [nome, cpf, telefone, email]
     );
 
@@ -39,6 +56,7 @@ export class ClienteModel {
     return insertResult.insertId;
   }
 
+  // Atualiza somente clientes ativos.
   static async update(
     id: number,
     nome: string,
@@ -49,7 +67,7 @@ export class ClienteModel {
     const [result] = await db.execute(
       `UPDATE clientes
        SET nome = ?, cpf = ?, telefone = ?, email = ?
-       WHERE id_cliente = ?`,
+       WHERE id_cliente = ? AND ativo = 1`,
       [nome, cpf, telefone, email, id]
     );
 
@@ -58,14 +76,17 @@ export class ClienteModel {
     return updateResult.affectedRows > 0;
   }
 
-  static async delete(id: number): Promise<boolean> {
+  // Desativa o cliente sem apagar seus dados.
+  static async deactivate(id: number): Promise<boolean> {
     const [result] = await db.execute(
-      "DELETE FROM clientes WHERE id_cliente = ?",
+      `UPDATE clientes
+       SET ativo = 0
+       WHERE id_cliente = ? AND ativo = 1`,
       [id]
     );
 
-    const deleteResult = result as { affectedRows: number };
+    const deactivateResult = result as { affectedRows: number };
 
-    return deleteResult.affectedRows > 0;
+    return deactivateResult.affectedRows > 0;
   }
 }

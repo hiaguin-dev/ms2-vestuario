@@ -9,3 +9,5 @@ export interface Usuario {
   ativo: boolean;
   criado_em: Date;
 }
+
+export type UsuarioPublico = Omit<Usuario, "senha">;

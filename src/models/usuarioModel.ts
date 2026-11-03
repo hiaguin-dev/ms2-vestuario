@@ -1,3 +1,4 @@
+
 import { db } from "../config/database";
 import { Usuario } from "../types/usuario";
 
@@ -11,9 +12,20 @@ export class UsuarioModel {
   }
 
   static async findById(id: number): Promise<Usuario | null> {
-    const [rows] = await db.query(
+    const [rows] = await db.execute(
       "SELECT * FROM usuarios WHERE id_usuario = ?",
       [id]
+    );
+
+    const usuarios = rows as Usuario[];
+
+    return usuarios.length > 0 ? usuarios[0] : null;
+  }
+
+  static async findByEmail(email: string): Promise<Usuario | null> {
+    const [rows] = await db.execute(
+      "SELECT * FROM usuarios WHERE email = ? LIMIT 1",
+      [email]
     );
 
     const usuarios = rows as Usuario[];
